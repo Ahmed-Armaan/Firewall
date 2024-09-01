@@ -71,7 +71,7 @@ void custom_pcap_handler(u_char *user, const struct pcap_pkthdr *h, const u_char
 
     printf("--------------------------------------------------------------------------------------------------------------------------------------------------\n");
 
-    free(mac_address); // Assuming get_mac dynamically allocates memory
+    free(mac_address); 
 }
 
 int capture(){ // pcap setup
