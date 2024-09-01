@@ -1,9 +1,7 @@
-#include <iostream>
 #include "packet_capture.h"
-using namespace std;
 
 int main(){
-	cout << "hello" << endl;
+	printf("------------------------------------------------------------------\033[32mSniffing Packets\033[00m----------------------------------------------------------------\n");
 	capture();
 	return 0;
 }

@@ -10,6 +10,12 @@
 #include <netinet/udp.h>
 #include <arpa/inet.h>
 #include <netinet/if_ether.h>
+#include <cstring>
+#include <stdlib.h>
+#include <sys/ioctl.h>
+#include <net/if.h>
+#include <sys/socket.h>
+#include <unistd.h>
 
 void custom_pcap_handler(u_char *user, const struct pcap_pkthdr *h, const u_char *bytes);
 int capture();

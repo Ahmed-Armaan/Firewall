@@ -1,51 +1,82 @@
 #include "packet_capture.h"
-#include <cstdio>
-#include <linux/if_ether.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <netinet/udp.h>
+#include <cstdlib>
+#include <cstring>
 
-void custom_pcap_handler(u_char *user, const struct pcap_pkthdr *h, const u_char *bytes){
-    printf("length of captured packet : %d\n", h->len);
-    printf("length of portion present : %d\n", h->caplen);
+void* get_mac() { // find mac address of the device
+    int fd = socket(AF_INET, SOCK_STREAM, 0);
+    struct ifreq ifreq;
+    strcpy(ifreq.ifr_name, "wlo1");  
+
+    if (ioctl(fd, SIOCGIFHWADDR, &ifreq) == -1) {
+        printf("ioctl failed\n");
+        close(fd);
+        return nullptr;
+    }
+
+    close(fd);
+    unsigned char* mac_buffer = (unsigned char*)malloc(6);
+    if (mac_buffer == nullptr) {
+        printf("Memory allocation failed\n");
+        return nullptr;
+    }
+    memcpy(mac_buffer, ifreq.ifr_hwaddr.sa_data, 6);
+
+    return (void*)mac_buffer;
+}
+
+void custom_pcap_handler(u_char *user, const struct pcap_pkthdr *h, const u_char *bytes) { // capture and handle packets
+    printf("Length of captured packet: %d\n", h->len);
+    printf("Length of portion present: %d\n", h->caplen);
     printf("%ld:%ld\n", h->ts.tv_sec, h->ts.tv_usec);
 
     struct ethhdr *eth_hdr = (struct ethhdr *)(bytes);
     struct iphdr *ip_hdr = (struct iphdr *)(bytes + sizeof(struct ethhdr));
+    unsigned char *mac_address = (unsigned char *)get_mac(); 
+    unsigned char mac_addr_buf[6];
 
-    printf("source MAC address : ");
+    printf("Source MAC address: ");
+    memcpy(mac_addr_buf, eth_hdr->h_source, 6);
     for(int i = 0; i < 6; i++)
-        printf("%x", eth_hdr->h_source[i]);
+        printf("%02x", eth_hdr->h_source[i]);
     printf("\n");
 
-    printf("destination MAC address : ");
+    printf("Destination MAC address: ");
     for(int i = 0; i < 6; i++)
-        printf("%x", eth_hdr->h_dest[i]);
+        printf("%02x", eth_hdr->h_dest[i]);
     printf("\n");
 
     switch(ip_hdr->protocol){
-        case IPPROTO_TCP:{
+        case IPPROTO_TCP: {
             printf("TCP protocol\n");
-            struct tcphdr *tcp_hdr = (struct tcphdr *)(bytes + sizeof(struct ethhdr) + ip_hdr->ihl);
-            printf("source port used = %d\n", ntohs(tcp_hdr->th_sport));
-            printf("destination port used = %d\n", ntohs(tcp_hdr->th_dport));
+            struct tcphdr *tcp_hdr = (struct tcphdr *)(bytes + sizeof(struct ethhdr) + (ip_hdr->ihl * 4));
+            printf("Source port used = %d\n", ntohs(tcp_hdr->th_sport));
+            printf("Destination port used = %d\n", ntohs(tcp_hdr->th_dport));
             break;
         }
-        case IPPROTO_UDP:{
+        case IPPROTO_UDP: {
             printf("UDP protocol\n");
-            struct udphdr *udp_hdr = (struct udphdr*)(bytes + sizeof(struct ethhdr) + ip_hdr->ihl);
-            printf("source port used = %d\n", ntohs(udp_hdr->uh_sport));
-            printf("destination port used = %d\n", ntohs(udp_hdr->uh_dport));
+            struct udphdr *udp_hdr = (struct udphdr*)(bytes + sizeof(struct ethhdr) + (ip_hdr->ihl * 4));
+            printf("Source port used = %d\n", ntohs(udp_hdr->uh_sport));
+            printf("Destination port used = %d\n", ntohs(udp_hdr->uh_dport));
             break;
         }
-        default:{
-            printf("protocol unhandled\n");
+        default: {
+            printf("Protocol unhandled\n");
+            break;
         }
     }
-    printf("---------------------------------------------------------------------------------------------------------------------\n");
+
+    if(memcmp(mac_addr_buf, mac_address, 6) == 0)
+        printf("Packet Sent\n");
+    else
+        printf("Packet Received\n");
+
+    printf("--------------------------------------------------------------------------------------------------------------------------------------------------\n");
+
+    free(mac_address); 
 }
 
-int capture(){
+int capture(){ // pcap setup
     char errbuf[PCAP_ERRBUF_SIZE];
     int opts = PCAP_CHAR_ENC_UTF_8;
     char source[] = "wlo1";
@@ -96,3 +127,4 @@ int capture(){
     pcap_close(p);
     return 1;
 }
+
