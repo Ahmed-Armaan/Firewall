@@ -1,6 +1,4 @@
 #include "packet_capture.h"
-#include <cstdlib>
-#include <cstring>
 
 void* get_mac() { // find mac address of the device
     int fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -73,7 +71,7 @@ void custom_pcap_handler(u_char *user, const struct pcap_pkthdr *h, const u_char
 
     printf("--------------------------------------------------------------------------------------------------------------------------------------------------\n");
 
-    free(mac_address); 
+    free(mac_address); // Assuming get_mac dynamically allocates memory
 }
 
 int capture(){ // pcap setup
