@@ -16,6 +16,7 @@
 #include <net/if.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <thread>
 
 void custom_pcap_handler(u_char *user, const struct pcap_pkthdr *h, const u_char *bytes);
 int capture();
